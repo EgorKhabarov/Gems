@@ -1,0 +1,4 @@
+max_value: 1_000_000
+death_drop: true
+death_drop_percent: 5
+death_drop_max: 1000  # null
