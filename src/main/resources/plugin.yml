@@ -1,33 +1,33 @@
 name: Gems
-version: "1.0-SNAPSHOT"
-main: org.egorkhabarov.gems.Gems
-api-version: "1.21"
+version: "${version}"
+main: egorkhabarov.gems.Gems
+api-version: "${api_version}"
 dependencies:
   - Vault
 
 commands:
   gems:
-    description: Gems command.
+    description: Gems command
 
 permissions:
   gems.*:
-    description: Grants access to all aspects of the plugin, including every permission node.
+    description: Grants access to all aspects of the plugin, including every permission node
     default: false
     children:
       gems.all: true
   gems.all:
-    description: Grants access to all aspects of the plugin, including every permission node.
+    description: Grants access to all aspects of the plugin, including every permission node
     default: false
     children:
       gems.give: true
       gems.withdrawal: true
       gems.reload: true
   gems.give:
-    description: Grants access to the give commands.
+    description: Grants access to the give commands
     default: false
   gems.withdrawal:
-    description: Grants access to the withdrawal command.
+    description: Grants access to the withdrawal command
     default: true
   gems.reload:
-    description: Grants access to the reload command.
+    description: Grants access to the reload command
     default: false
