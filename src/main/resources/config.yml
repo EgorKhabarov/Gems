@@ -1,4 +1,10 @@
-max_value: 1_000_000
-death_drop: true
-death_drop_percent: 5
-death_drop_max: 1000  # null
+item:
+  name: "§a§l%,d Gems"
+  lore: "§fValuable Resource, used for trading"
+  max_value: 1_000_000
+
+death_drop:
+  enabled: false
+  percent: 5
+  max: 1000  # null
+
