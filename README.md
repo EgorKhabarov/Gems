@@ -1,8 +1,5 @@
 # Gems
 
-A plugin for the Minecraft Paper server that allows you to store in-game currency in emerald items.
-The plugin also adds currency loot upon death.
-
 **Gems** is a lightweight plugin for **Minecraft Paper servers** that lets players store and manage their in-game currency inside **emerald items**.  
 It also adds **currency drops on player death**, making the economy more immersive.
 
