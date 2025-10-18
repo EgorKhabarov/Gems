@@ -1,10 +1,12 @@
 package egorkhabarov;
 
 import egorkhabarov.config.ConfigManager;
+import egorkhabarov.utils.ChatUtils;
+import egorkhabarov.commands.GemsCommand;
+import egorkhabarov.commands.GemsCommandTabCompleter;
 import egorkhabarov.utils.Utils;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,10 +15,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
-import net.kyori.adventure.text.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
-import java.util.Locale;
 import java.util.TimeZone;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
@@ -33,8 +31,6 @@ import java.util.logging.SimpleFormatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
-import egorkhabarov.commands.GemsCommand;
-import egorkhabarov.commands.GemsCommandTabCompleter;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -46,12 +42,11 @@ public final class Gems extends JavaPlugin implements Listener {
     private Economy economy;
     public static final Logger logger = Logger.getLogger("GemsLogger");
 
-
     @Override
     public void onEnable() {
         Gems.instance = this;
         if (!this.setupEconomy()) {
-            this.getLogger().severe("Плагин §6Vault §сне найден на сервере!"); // TODO error
+            this.getLogger().severe("Plugin §6Vault §сnot found on server!");
             this.getServer().getPluginManager().disablePlugin(this); // TODO ? disablePlugin
             return;
         }
@@ -70,7 +65,7 @@ public final class Gems extends JavaPlugin implements Listener {
         }
 
         this.setupLogger();
-        System.out.println("§a§lGems Enabled");
+        this.getLogger().info("§a§lGems Enabled");
     }
 
     @Override
@@ -113,9 +108,9 @@ public final class Gems extends JavaPlugin implements Listener {
                 player.getInventory().setItemInMainHand(null);
 
                 int gems = value * item.getAmount();
-                this.log(this.formatPlayer(player), "received "+gems+" Gems " + this.formatGems(item));
+                this.log(Utils.formatPlayer(player), "received "+gems+" Gems " + Utils.formatGems(item)); // TODO log + String.format
                 this.economy.depositPlayer(player, gems);
-                this.sendGemsMessage(player, gems);
+                ChatUtils.sendGemsMessage(player, gems);
             }
         }
     }
@@ -130,9 +125,9 @@ public final class Gems extends JavaPlugin implements Listener {
                 event.setCancelled(true);
 
                 int gems = value * item.getAmount();
-                this.log(this.formatPlayer(player), "received "+gems+" Gems " + this.formatGems(item));
+                this.log(Utils.formatPlayer(player), "received "+gems+" Gems " + Utils.formatGems(item)); // TODO log + String.format
                 this.economy.depositPlayer(player, gems);
-                this.sendGemsMessage(player, gems);
+                ChatUtils.sendGemsMessage(player, gems);
             }
         }
     }
@@ -161,12 +156,6 @@ public final class Gems extends JavaPlugin implements Listener {
             // Добавляем предмет в дроп игрока
             event.getDrops().add(item);
         }
-    }
-
-    private void sendGemsMessage(Player player, int value) {
-        String message = "§aYou received §l" + String.format(Locale.US, "%,d",value) + " Gems";
-        player.sendMessage(message);
-        player.sendActionBar(Component.text(message));
     }
 
     private void setupLogger() {
@@ -207,46 +196,11 @@ public final class Gems extends JavaPlugin implements Listener {
                 return String.format("[%s] %s%n", timestamp, record.getMessage());
             }
         });
-        fileHandler.setLevel(Level.ALL); // Уровень логирования
+        fileHandler.setLevel(Level.ALL);
         return fileHandler;
     }
 
     private void archiveOldLogs() {
-        // try {
-        //     // Получаем текущую дату
-        //     LocalDate currentDate = LocalDate.now();
-        //     String logFileName = currentDate + ".log";
-        //
-        //     // Получаем файлы в папке logs
-        //     File logDir = new File(this.getDataFolder(), "logs");
-        //     File[] logFiles = logDir.listFiles((dir, name) -> name.endsWith(".log") && !name.equals(logFileName));
-        //
-        //     // Архивируем старые файлы, если они есть
-        //     if (logFiles != null) {
-        //         for (File logFile : logFiles) {
-        //             // Архивируем файл в .gz
-        //             String gzFileName = logFile.getAbsolutePath() + ".gz";
-        //             try (FileInputStream fis = new FileInputStream(logFile);
-        //                  GZIPOutputStream gzos = new GZIPOutputStream(new FileOutputStream(gzFileName))) {
-        //
-        //                 byte[] buffer = new byte[1024];
-        //                 int length;
-        //                 while ((length = fis.read(buffer)) > 0) {
-        //                     gzos.write(buffer, 0, length);
-        //                 }
-        //
-        //                 // Удаляем оригинальный лог-файл после архивирования
-        //                 Files.delete(Paths.get(logFile.getAbsolutePath()));
-        //
-        //                 this.getLogger().info("Лог файл архивирован: " + gzFileName);
-        //             } catch (IOException e) {
-        //                 this.getLogger().severe("Ошибка при архивировании лога: " + e.getMessage());
-        //             }
-        //         }
-        //     }
-        // } catch (Exception e) {
-        //     this.getLogger().severe("Не удалось архивировать старые логи: " + e.getMessage());
-        // }
         try {
             // Получаем текущую дату для текущего лог-файла
             LocalDate currentDate = LocalDate.now();
@@ -291,51 +245,5 @@ public final class Gems extends JavaPlugin implements Listener {
 
     public void log(String playerName, String operationDetails) {
         logger.info("["+playerName+"]" + ": " + operationDetails);
-    }
-
-    public String formatPlayer(Player player) {
-        return player.getUniqueId()+":"+player.getName();
-    }
-
-    public String formatGems(ItemStack item) {
-        if (!item.hasItemMeta()) {
-            return "";
-        }
-        ItemMeta meta = item.getItemMeta();
-        if (
-            !(
-                meta.getPersistentDataContainer().has(
-                    new NamespacedKey(Gems.getInstance(), "value"),
-                    PersistentDataType.INTEGER
-                )
-                && meta.getPersistentDataContainer().has(
-                    new NamespacedKey(Gems.getInstance(), "creator"),
-                    PersistentDataType.STRING
-                )
-                && meta.getPersistentDataContainer().has(
-                    new NamespacedKey(Gems.getInstance(), "creatorName"),
-                    PersistentDataType.STRING
-                )
-            )
-        ) {
-            return "";
-        }
-
-        Integer value = meta.getPersistentDataContainer().get(
-            new NamespacedKey(Gems.getInstance(), "value"),
-            PersistentDataType.INTEGER
-        );
-        if (value == null) {
-            value = 1;
-        }
-        String creator = meta.getPersistentDataContainer().get(
-            new NamespacedKey(Gems.getInstance(), "creator"),
-            PersistentDataType.STRING
-        );
-        String creatorName = meta.getPersistentDataContainer().get(
-            new NamespacedKey(Gems.getInstance(), "creatorName"),
-            PersistentDataType.STRING
-        );
-        return value * item.getAmount() + " (" + value + "*" + item.getAmount() + ") Gems from ["+creator+":"+creatorName+"]";
     }
 }

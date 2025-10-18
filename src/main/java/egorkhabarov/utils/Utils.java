@@ -5,6 +5,7 @@ import egorkhabarov.config.ConfigManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -81,5 +82,52 @@ public class Utils {
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    public static String formatPlayer(Player player) {
+        return player.getUniqueId() + ":" + player.getName();
+    }
+
+    public static String formatGems(ItemStack item) {
+        if (!item.hasItemMeta()) {
+            return "";
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (
+            !(
+                meta.getPersistentDataContainer().has(
+                    new NamespacedKey(Gems.getInstance(), "value"),
+                    PersistentDataType.INTEGER
+                )
+                && meta.getPersistentDataContainer().has(
+                    new NamespacedKey(Gems.getInstance(), "creator"),
+                    PersistentDataType.STRING
+                )
+                && meta.getPersistentDataContainer().has(
+                    new NamespacedKey(Gems.getInstance(), "creatorName"),
+                    PersistentDataType.STRING
+                )
+            )
+        ) {
+            return "";
+        }
+
+        Integer value = meta.getPersistentDataContainer().get(
+            new NamespacedKey(Gems.getInstance(), "value"),
+            PersistentDataType.INTEGER
+        );
+        if (value == null) {
+            value = 1;
+        }
+        String creator = meta.getPersistentDataContainer().get(
+            new NamespacedKey(Gems.getInstance(), "creator"),
+            PersistentDataType.STRING
+        );
+        String creatorName = meta.getPersistentDataContainer().get(
+            new NamespacedKey(Gems.getInstance(), "creatorName"),
+            PersistentDataType.STRING
+        );
+
+        return value * item.getAmount() + " (" + value + "*" + item.getAmount() + ") Gems from [" + creator + ":" + creatorName + "]";
     }
 }
