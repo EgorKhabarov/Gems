@@ -1,11 +1,9 @@
 package egorkhabarov;
 
-import egorkhabarov.config.Config;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import egorkhabarov.config.ConfigManager;
+import egorkhabarov.utils.Utils;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -14,7 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -28,7 +25,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.logging.Logger;
@@ -37,7 +33,6 @@ import java.util.logging.SimpleFormatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
-import javax.annotation.Nullable;
 import egorkhabarov.commands.GemsCommand;
 import egorkhabarov.commands.GemsCommandTabCompleter;
 import net.milkbowl.vault.economy.Economy;
@@ -46,21 +41,22 @@ import org.jetbrains.annotations.NotNull;
 
 
 public final class Gems extends JavaPlugin implements Listener {
+    private static Gems instance;
+    private ConfigManager configManager;
     private Economy economy;
-    private Config config;
+    public static final Logger logger = Logger.getLogger("GemsLogger");
 
-    private static final Logger logger = Logger.getLogger("GemsLogger");
 
     @Override
     public void onEnable() {
-        if (!setupEconomy()) {
-            getLogger().severe("Плагин §6Vault §сне найден на сервере!");
-            getServer().getPluginManager().disablePlugin(this);
+        Gems.instance = this;
+        if (!this.setupEconomy()) {
+            this.getLogger().severe("Плагин §6Vault §сне найден на сервере!"); // TODO error
+            this.getServer().getPluginManager().disablePlugin(this); // TODO ? disablePlugin
             return;
         }
 
-        this.saveDefaultConfig();
-        this.config = new Config(this);
+        this.configManager = new ConfigManager(this);
 
         this.getServer().getPluginManager().registerEvents(this, this);
 
@@ -75,6 +71,23 @@ public final class Gems extends JavaPlugin implements Listener {
 
         this.setupLogger();
         System.out.println("§a§lGems Enabled");
+    }
+
+    @Override
+    public void onDisable() {
+        Gems.instance = null;
+    }
+
+    public static Gems getInstance() {
+        return Gems.instance;
+    }
+
+    public ConfigManager getConfigManager() {
+        return this.configManager;
+    }
+
+    public Economy getEconomy() {
+        return this.economy;
     }
 
     private boolean setupEconomy() {
@@ -95,7 +108,7 @@ public final class Gems extends JavaPlugin implements Listener {
         ) {
             Player player = event.getPlayer();
             ItemStack item = player.getInventory().getItemInMainHand();
-            Integer value = this.checkEmerald(item);
+            Integer value = Utils.checkEmerald(item);
             if (value != null) {
                 player.getInventory().setItemInMainHand(null);
 
@@ -111,7 +124,7 @@ public final class Gems extends JavaPlugin implements Listener {
     public void onEntityPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
             ItemStack item = event.getItem().getItemStack();
-            Integer value = this.checkEmerald(item);
+            Integer value = Utils.checkEmerald(item);
             if (value != null) {
                 event.getItem().remove();
                 event.setCancelled(true);
@@ -124,54 +137,36 @@ public final class Gems extends JavaPlugin implements Listener {
         }
     }
 
-    private @Nullable Integer checkEmerald(@Nullable ItemStack item) {
-        if (
-            item == null
-            || item.getType() != Material.EMERALD
-            || !item.hasItemMeta()
-        ) {
-            return null;
+    @EventHandler
+    public void onPlayerDeath(EntityDeathEvent event) {
+        // Проверяем, что умер именно игрок
+        if (this.configManager.isDeathDrop() && event.getEntity() instanceof Player player) {
+
+            // Создаём предмет, который должен выпасть с игрока
+            int balance = (int) this.getEconomy().getBalance(player);
+            int value = (balance * this.configManager.getDeathDropPercent()) / 100;
+            if (value < 1) {
+                return;
+            }
+            if (this.configManager.getDeathDropMax() != null && value > this.configManager.getDeathDropMax()) {
+                value = this.configManager.getDeathDropMax();
+            }
+            EconomyResponse economyResponse = this.getEconomy().withdrawPlayer(player, value);
+            if (economyResponse.type == EconomyResponse.ResponseType.FAILURE) { // TODO добавить такую же проверку на другие хендлеры
+                this.getLogger().severe("Failed to withdraw Gems " + player.getName());
+                return;
+            }
+            ItemStack item = Utils.createGemsItem(value, 1, player.getUniqueId().toString(), player.getName());
+
+            // Добавляем предмет в дроп игрока
+            event.getDrops().add(item);
         }
-        ItemMeta meta = item.getItemMeta();
-        if (
-            meta == null
-            || !meta.getPersistentDataContainer().has(
-                new NamespacedKey(this, "value"),
-                PersistentDataType.INTEGER
-            )
-            || !meta.getPersistentDataContainer().has(
-                new NamespacedKey(this, "creator"),
-                PersistentDataType.STRING
-            )
-            || !meta.getPersistentDataContainer().has(
-                new NamespacedKey(this, "creatorName"),
-                PersistentDataType.STRING
-            )
-        ) {
-            return null;
-        }
-        Integer value = meta.getPersistentDataContainer().get(
-            new NamespacedKey(this, "value"),
-            PersistentDataType.INTEGER
-        );
-        if (value == null || value < 1 || value > this.config.max_value) {
-            return null;
-        }
-        return value;
     }
 
     private void sendGemsMessage(Player player, int value) {
         String message = "§aYou received §l" + String.format(Locale.US, "%,d",value) + " Gems";
         player.sendMessage(message);
         player.sendActionBar(Component.text(message));
-    }
-
-    public Economy getEconomy() {
-        return this.economy;
-    }
-
-    public Config getPluginConfig() {
-        return this.config;
     }
 
     private void setupLogger() {
@@ -310,15 +305,15 @@ public final class Gems extends JavaPlugin implements Listener {
         if (
             !(
                 meta.getPersistentDataContainer().has(
-                    new NamespacedKey(this, "value"),
+                    new NamespacedKey(Gems.getInstance(), "value"),
                     PersistentDataType.INTEGER
                 )
                 && meta.getPersistentDataContainer().has(
-                    new NamespacedKey(this, "creator"),
+                    new NamespacedKey(Gems.getInstance(), "creator"),
                     PersistentDataType.STRING
                 )
                 && meta.getPersistentDataContainer().has(
-                    new NamespacedKey(this, "creatorName"),
+                    new NamespacedKey(Gems.getInstance(), "creatorName"),
                     PersistentDataType.STRING
                 )
             )
@@ -327,77 +322,20 @@ public final class Gems extends JavaPlugin implements Listener {
         }
 
         Integer value = meta.getPersistentDataContainer().get(
-            new NamespacedKey(this, "value"),
+            new NamespacedKey(Gems.getInstance(), "value"),
             PersistentDataType.INTEGER
         );
         if (value == null) {
             value = 1;
         }
         String creator = meta.getPersistentDataContainer().get(
-            new NamespacedKey(this, "creator"),
+            new NamespacedKey(Gems.getInstance(), "creator"),
             PersistentDataType.STRING
         );
         String creatorName = meta.getPersistentDataContainer().get(
-            new NamespacedKey(this, "creatorName"),
+            new NamespacedKey(Gems.getInstance(), "creatorName"),
             PersistentDataType.STRING
         );
         return value * item.getAmount() + " (" + value + "*" + item.getAmount() + ") Gems from ["+creator+":"+creatorName+"]";
-    }
-
-    @EventHandler
-    public void onPlayerDeath(EntityDeathEvent event) {
-        // Проверяем, что умер именно игрок
-        if (this.config.death_drop && event.getEntity() instanceof Player player) {
-
-            // Создаём предмет, который должен выпасть с игрока
-            int balance = (int) this.getEconomy().getBalance(player);
-            int value = (balance * this.config.death_drop_percent) / 100;
-            if (value < 1) {
-                return;
-            }
-            if (this.config.death_drop_max != null && value > this.config.death_drop_max) {
-                value = this.config.death_drop_max;
-            }
-            EconomyResponse economyResponse = this.getEconomy().withdrawPlayer(player, value);
-            if (economyResponse.type == EconomyResponse.ResponseType.FAILURE) {
-                this.getLogger().severe("Failed to withdraw Gems " + player.getName());
-                return;
-            }
-            ItemStack item = createGemsItem(value, 1, player.getUniqueId().toString(), player.getName());
-
-            // Добавляем предмет в дроп игрока
-            event.getDrops().add(item);
-        }
-    }
-
-    public ItemStack createGemsItem(int value, int amount, String creator, String creatorName) {
-        ItemStack item = new ItemStack(Material.EMERALD, amount);
-        ItemMeta meta = item.getItemMeta();
-        meta.itemName(
-            Component.text(
-                String.format(Locale.US, "%,d", value) + " Gems",
-                NamedTextColor.GREEN,
-                TextDecoration.BOLD
-            )
-        );
-        meta.lore(List.of(Component.text("§fValuable Resource, used for trading")));
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.getPersistentDataContainer().set(
-            new NamespacedKey(this, "value"),
-            PersistentDataType.INTEGER,
-            value
-        );
-        meta.getPersistentDataContainer().set(
-            new NamespacedKey(this, "creator"),
-            PersistentDataType.STRING,
-            creator
-        );
-        meta.getPersistentDataContainer().set(
-            new NamespacedKey(this, "creatorName"),
-            PersistentDataType.STRING,
-            creatorName
-        );
-        item.setItemMeta(meta);
-        return item;
     }
 }

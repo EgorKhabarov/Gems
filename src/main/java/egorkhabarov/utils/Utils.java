@@ -57,7 +57,9 @@ public class Utils {
         ItemMeta meta = item.getItemMeta();
 
         meta.itemName(Component.text(String.format(Locale.US, config.getItemName(), value)));
-        meta.lore(List.of(Component.text(config.getItemLore())));
+        if (!config.getItemLore().isEmpty()) {
+            meta.lore(List.of(Component.text(config.getItemLore())));
+        }
 
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
