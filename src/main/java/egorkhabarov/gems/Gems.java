@@ -1,4 +1,4 @@
-package org.egorkhabarov.gems;
+package egorkhabarov.gems;
 
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -27,12 +27,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.logging.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+import java.util.logging.Logger;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
 import javax.annotation.Nullable;
-import org.egorkhabarov.commands.GemsCommand;
-import org.egorkhabarov.commands.GemsCommandTabCompleter;
+import egorkhabarov.commands.GemsCommand;
+import egorkhabarov.commands.GemsCommandTabCompleter;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -77,7 +84,7 @@ public final class Gems extends JavaPlugin implements Listener {
         // getConfig().set("key", "value");
         // saveConfig();
         
-        setupLogger();
+        this.setupLogger();
 
         // System.out.println("    ");
         System.out.println("§a§lGems Enabled");
@@ -86,11 +93,11 @@ public final class Gems extends JavaPlugin implements Listener {
     }
 
     private boolean setupEconomy() {
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        RegisteredServiceProvider<Economy> rsp = this.getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp != null) {
-            economy = rsp.getProvider();
+            this.economy = rsp.getProvider();
         }
-        return economy != null;
+        return this.economy != null;
     }
 
     @Override
@@ -108,7 +115,7 @@ public final class Gems extends JavaPlugin implements Listener {
         ) {
             Player player = event.getPlayer();
             ItemStack item = player.getInventory().getItemInMainHand();
-            Integer value = checkEmerald(item);
+            Integer value = this.checkEmerald(item);
             if (value != null) {
                 player.getInventory().setItemInMainHand(null);
 
@@ -124,7 +131,7 @@ public final class Gems extends JavaPlugin implements Listener {
     public void onEntityPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
             ItemStack item = event.getItem().getItemStack();
-            Integer value = checkEmerald(item);
+            Integer value = this.checkEmerald(item);
             if (value != null) {
                 event.getItem().remove();
                 event.setCancelled(true);
@@ -186,7 +193,7 @@ public final class Gems extends JavaPlugin implements Listener {
     }
 
     public Economy getEconomy() {
-        return economy;
+        return this.economy;
     }
 
     private void setupLogger() {
@@ -196,31 +203,16 @@ public final class Gems extends JavaPlugin implements Listener {
             FileHandler fileHandler = this.getFileHandler(currentDate);
             logger.addHandler(fileHandler);
             logger.setUseParentHandlers(false);
-
             // Архивируем старые логи, если они есть
             this.archiveOldLogs();
-
         } catch (IOException e) {
-            getLogger().severe("Не удалось настроить логирование: " + e.getMessage());
+            this.getLogger().severe("Не удалось настроить логирование: " + e.getMessage());
         }
     }
 
     private @NotNull FileHandler getFileHandler(LocalDate currentDate) throws IOException {
-        // File logFile = new File(this.getDataFolder(), "logs/" + currentDate + ".log");
-        // String logFileName = logFile.getAbsolutePath();
-        //
-        // // Создаём директорию для логов, если её нет
-        // File logDir = new File(this.getDataFolder(), "logs");
-        // if (!logDir.exists()) {
-        //     logDir.mkdirs();
-        // }
-        //
-        // // Настройка логера
-        // FileHandler fileHandler = new FileHandler(logFileName, true); // Дневной файл логов
-        // fileHandler.setFormatter(new SimpleFormatter());
-        // fileHandler.setLevel(Level.ALL); // Уровень логирования
-        // return fileHandler;
         File logDir = new File(this.getDataFolder(), "logs");
+
         if (!logDir.exists()) {
             logDir.mkdirs(); // Создаём директорию, если её нет
         }
@@ -233,7 +225,7 @@ public final class Gems extends JavaPlugin implements Listener {
         fileHandler.setFormatter(new SimpleFormatter() {
             @Override
             public String format(LogRecord record) {
-                //return super.format(record);// Форматируем время в UTC
+                // return super.format(record); // Форматируем время в UTC
                 Date logDate = new Date(record.getMillis());
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -320,12 +312,11 @@ public final class Gems extends JavaPlugin implements Listener {
             }
 
         } catch (Exception e) {
-            getLogger().severe("Не удалось архивировать старые логи: " + e.getMessage());
+            this.getLogger().severe("Не удалось архивировать старые логи: " + e.getMessage());
         }
     }
 
     public void log(String playerName, String operationDetails) {
-
         logger.info("["+playerName+"]" + ": " + operationDetails);
     }
 

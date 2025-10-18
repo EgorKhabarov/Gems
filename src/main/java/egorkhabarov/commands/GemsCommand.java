@@ -1,16 +1,15 @@
-package org.egorkhabarov.commands;
+package egorkhabarov.commands;
 
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.egorkhabarov.gems.Gems;
+import egorkhabarov.gems.Gems;
 import org.jetbrains.annotations.NotNull;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import java.util.Locale;
 import java.util.Map;
-
 
 public class GemsCommand implements CommandExecutor {
     private final Gems gemsPlugin;
