@@ -1,5 +1,7 @@
 # Gems
 
+[![build](https://github.com/EgorKhabarov/Gems/actions/workflows/build.yml/badge.svg)](https://github.com/EgorKhabarov/Gems/actions/workflows/build.yml)
+
 **Gems** is a lightweight plugin for **Minecraft Paper servers** that lets players store and manage their in-game currency inside **emerald items**.  
 It also adds **currency drops on player death**, making the economy more immersive.
 
