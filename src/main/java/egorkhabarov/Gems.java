@@ -1,5 +1,6 @@
-package egorkhabarov.gems;
+package egorkhabarov;
 
+import egorkhabarov.config.Config;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -7,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -60,7 +60,7 @@ public final class Gems extends JavaPlugin implements Listener {
         }
 
         this.saveDefaultConfig();
-        this.config = Config.load(this);
+        this.config = new Config(this);
 
         this.getServer().getPluginManager().registerEvents(this, this);
 

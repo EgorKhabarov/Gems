@@ -1,10 +1,11 @@
 package egorkhabarov.commands;
 
+import egorkhabarov.Gems;
+import egorkhabarov.config.Config;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import egorkhabarov.gems.Gems;
 import org.jetbrains.annotations.NotNull;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -13,9 +14,11 @@ import java.util.Map;
 
 public class GemsCommand implements CommandExecutor {
     private final Gems gemsPlugin;
+    private final Config config;
 
     public GemsCommand(Gems gems) {
         this.gemsPlugin = gems;
+        this.config = gems.getPluginConfig();
     }
 
     @Override
@@ -29,7 +32,7 @@ public class GemsCommand implements CommandExecutor {
             (sender.isOp() || sender.hasPermission("gems.*") || sender.hasPermission("gems.reload"))
             && args.length == 1
             && args[0].equals("reload")) {
-            this.gemsPlugin.reloadMyConfig();
+            this.config.load();
             sender.sendMessage("§aPlugin config successfully reloaded");
             return true;
         }
@@ -72,8 +75,8 @@ public class GemsCommand implements CommandExecutor {
                     player.sendMessage("§cЧисло слишком маленькое. Минимум §a§l1 Gems");
                     return true;
                 }
-                if (value > this.gemsPlugin.getMaxValue()) {
-                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", this.gemsPlugin.getMaxValue()) + " Gems");
+                if (value > this.config.max_value) {
+                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", this.config.max_value) + " Gems");
                     return true;
                 }
             } catch (NumberFormatException e) {
@@ -126,8 +129,8 @@ public class GemsCommand implements CommandExecutor {
                     player.sendMessage("§cЧисло слишком маленькое. Минимум §a§l1 Gems");
                     return true;
                 }
-                if (value > this.gemsPlugin.getMaxValue()) {
-                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", this.gemsPlugin.getMaxValue()) + " Gems");
+                if (value > this.config.max_value) {
+                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", this.config.max_value) + " Gems");
                     return true;
                 }
             } catch (NumberFormatException e) {
