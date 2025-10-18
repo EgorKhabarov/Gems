@@ -46,18 +46,10 @@ import org.jetbrains.annotations.NotNull;
 
 
 public final class Gems extends JavaPlugin implements Listener {
-    private Economy economy = null;
+    private Economy economy;
+    private Config config;
+
     private static final Logger logger = Logger.getLogger("GemsLogger");
-
-    String itemName;
-    List<String> itemNameStyle;
-    String itemLore;
-    List<String> itemLoreStyle;
-    int max_value;
-    boolean death_drop;
-    int death_drop_percent;
-    Integer death_drop_max;
-
 
     @Override
     public void onEnable() {
@@ -66,6 +58,9 @@ public final class Gems extends JavaPlugin implements Listener {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        this.saveDefaultConfig();
+        this.config = Config.load(this);
 
         this.getServer().getPluginManager().registerEvents(this, this);
 
@@ -78,18 +73,8 @@ public final class Gems extends JavaPlugin implements Listener {
             Bukkit.getPluginManager().disablePlugin(this);
         }
 
-        this.saveDefaultConfig();
-        this.reloadMyConfig();
-
-        // getConfig().set("key", "value");
-        // saveConfig();
-        
         this.setupLogger();
-
-        // System.out.println("    ");
         System.out.println("§a§lGems Enabled");
-        // System.out.println("    ");
-
     }
 
     private boolean setupEconomy() {
@@ -98,11 +83,6 @@ public final class Gems extends JavaPlugin implements Listener {
             this.economy = rsp.getProvider();
         }
         return this.economy != null;
-    }
-
-    @Override
-    public void onDisable() {
-        // onDisable
     }
 
     @EventHandler
@@ -174,13 +154,7 @@ public final class Gems extends JavaPlugin implements Listener {
             new NamespacedKey(this, "value"),
             PersistentDataType.INTEGER
         );
-        if (value == null) {
-            return null;
-        }
-        if (value < 1) {
-            return null;
-        }
-        if (value > 1_000_000) {
+        if (value == null || value < 1 || value > this.config.max_value) {
             return null;
         }
         return value;
@@ -194,6 +168,10 @@ public final class Gems extends JavaPlugin implements Listener {
 
     public Economy getEconomy() {
         return this.economy;
+    }
+
+    public Config getPluginConfig() {
+        return this.config;
     }
 
     private void setupLogger() {
@@ -214,7 +192,7 @@ public final class Gems extends JavaPlugin implements Listener {
         File logDir = new File(this.getDataFolder(), "logs");
 
         if (!logDir.exists()) {
-            logDir.mkdirs(); // Создаём директорию, если её нет
+            logDir.mkdirs();
         }
 
         String logFileName = logDir + File.separator + currentDate + ".log"; // Путь к текущему лог-файлу
@@ -369,16 +347,16 @@ public final class Gems extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerDeath(EntityDeathEvent event) {
         // Проверяем, что умер именно игрок
-        if (this.death_drop && event.getEntity() instanceof Player player) {
+        if (this.config.death_drop && event.getEntity() instanceof Player player) {
 
             // Создаём предмет, который должен выпасть с игрока
             int balance = (int) this.getEconomy().getBalance(player);
-            int value = (balance * this.death_drop_percent) / 100;
+            int value = (balance * this.config.death_drop_percent) / 100;
             if (value < 1) {
                 return;
             }
-            if (this.death_drop_max != null && value > this.death_drop_max) {
-                value = 1000;
+            if (this.config.death_drop_max != null && value > this.config.death_drop_max) {
+                value = this.config.death_drop_max;
             }
             EconomyResponse economyResponse = this.getEconomy().withdrawPlayer(player, value);
             if (economyResponse.type == EconomyResponse.ResponseType.FAILURE) {
@@ -421,26 +399,5 @@ public final class Gems extends JavaPlugin implements Listener {
         );
         item.setItemMeta(meta);
         return item;
-    }
-
-    public int getMaxValue() {
-        return this.max_value;
-    }
-
-    public void reloadMyConfig() {
-        FileConfiguration config = this.getConfig();
-        this.itemName = config.getString("name", "%s Gems");
-        this.itemNameStyle = config.getStringList("name_style");
-        this.itemLore = config.getString("lore", "Valuable Resource, used for trading");
-        this.itemLoreStyle = config.getStringList("lore_style");
-        this.max_value = config.getInt("max_value", 1_000_000);
-        this.death_drop = config.getBoolean("death_drop", true);
-        this.death_drop_percent = config.getInt("death_drop_percent", 5);
-        String death_drop_max_temp = config.getString("death_drop_max");
-        if (death_drop_max_temp == null || death_drop_max_temp.equals("null")) {
-            this.death_drop_max = null;
-        } else {
-            this.death_drop_max = Integer.parseInt(death_drop_max_temp);
-        }
     }
 }

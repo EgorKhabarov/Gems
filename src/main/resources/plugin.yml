@@ -1,6 +1,6 @@
 name: Gems
 version: "${version}"
-main: egorkhabarov.gems.Gems
+main: egorkhabarov.Gems
 api-version: "${api_version}"
 dependencies:
   - Vault
