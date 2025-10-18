@@ -38,9 +38,6 @@ Use `/gems withdrawal <value> [count]`
 
 ![withdrawal.png](images/withdrawal.png)
 
-To obtain currency from an emerald item, equip it in your main hand and left-click/right-click on a block or air.
-The item will disappear, and the currency it contained will be added to your balance.
-
 ## Depositing Currency
 
 To convert a currency emerald back into balance:
