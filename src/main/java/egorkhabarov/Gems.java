@@ -43,7 +43,7 @@ public final class Gems extends JavaPlugin implements Listener {
 
         PluginCommand gems = this.getCommand("gems");
         if (gems != null) {
-            gems.setExecutor(new GemsCommand(this));
+            gems.setExecutor(new GemsCommand());
             gems.setTabCompleter(new GemsCommandTabCompleter());
         } else {
             this.getLogger().info("§cDisable");
@@ -99,7 +99,7 @@ public final class Gems extends JavaPlugin implements Listener {
                 int gems = value * item.getAmount();
                 this.pluginLogger.log(Utils.formatPlayer(player), "received "+gems+" Gems " + Utils.formatGems(item)); // TODO log + String.format
                 this.economy.depositPlayer(player, gems);
-                ChatUtils.sendGemsMessage(player, gems);
+                ChatUtils.sendReceivedGemsMessage(player, gems);
             }
         }
     }
@@ -116,7 +116,7 @@ public final class Gems extends JavaPlugin implements Listener {
                 int gems = value * item.getAmount();
                 this.pluginLogger.log(Utils.formatPlayer(player), "received "+gems+" Gems " + Utils.formatGems(item)); // TODO log + String.format
                 this.economy.depositPlayer(player, gems);
-                ChatUtils.sendGemsMessage(player, gems);
+                ChatUtils.sendReceivedGemsMessage(player, gems);
             }
         }
     }
