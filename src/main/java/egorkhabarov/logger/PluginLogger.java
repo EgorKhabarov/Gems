@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
@@ -29,87 +30,77 @@ public class PluginLogger {
 
     public void setupLogger() {
         try {
+            File logDir = new File(plugin.getDataFolder(), "logs");
+            if (!logDir.exists() && !logDir.mkdirs()) {
+                this.plugin.getLogger().warning("Не удалось создать папку logs!");
+                return;
+            }
+            for (var handler : PluginLogger.logger.getHandlers()) {
+                handler.close();
+                logger.removeHandler(handler);
+            }
+
             LocalDate currentDate = LocalDate.now();
-            FileHandler fileHandler = this.getFileHandler(currentDate);
+            FileHandler fileHandler = this.getFileHandler(logDir, currentDate);
             PluginLogger.logger.addHandler(fileHandler);
             PluginLogger.logger.setUseParentHandlers(false);
-            this.archiveOldLogs();
+            PluginLogger.logger.setLevel(Level.INFO);
+            this.archiveOldLogs(logDir, currentDate);
         } catch (IOException e) {
             plugin.getLogger().severe("Не удалось настроить логирование: " + e.getMessage());
         }
     }
 
-    private @NotNull FileHandler getFileHandler(LocalDate currentDate) throws IOException {
-        File logDir = new File(plugin.getDataFolder(), "logs");
+    private @NotNull FileHandler getFileHandler(File logDir, LocalDate date) throws IOException {
+        String fileName = logDir + File.separator + date + ".log";
+        FileHandler handler = new FileHandler(fileName, true);
 
-        if (!logDir.exists()) {
-            logDir.mkdirs();
-        }
-
-        String logFileName = logDir + File.separator + currentDate + ".log";
-        File logFile = new File(logFileName);
-
-        FileHandler fileHandler = new FileHandler(logFile.getAbsolutePath(), true);
-        fileHandler.setFormatter(new SimpleFormatter() {
+        handler.setFormatter(new SimpleFormatter() {
             @Override
             public String format(LogRecord record) {
-                // return super.format(record); // Форматируем время в UTC
                 Date logDate = new Date(record.getMillis());
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                sdf.setTimeZone(TimeZone.getDefault());
                 String timestamp = sdf.format(logDate);
-
                 return String.format("[%s] %s%n", timestamp, record.getMessage());
             }
         });
-        fileHandler.setLevel(Level.ALL);
-        return fileHandler;
+
+        handler.setLevel(Level.ALL);
+        return handler;
     }
 
-    private void archiveOldLogs() {
-        try {
-            // Получаем текущую дату для текущего лог-файла
-            LocalDate currentDate = LocalDate.now();
-            String currentLogFileName = currentDate + ".log"; // Имя текущего лог-файла
+    private void archiveOldLogs(File logDir, LocalDate currentDate) {
+        File[] logFiles = logDir.listFiles((dir, name) ->
+            name.endsWith(".log") && !name.equals(currentDate + ".log"));
 
-            // Получаем файлы в папке logs
-            File logDir = new File(plugin.getDataFolder(), "logs");
-            File[] logFiles = logDir.listFiles((dir, name) -> name.endsWith(".log") && !name.equals(currentLogFileName));
+        if (logFiles == null) {
+            return;
+        }
 
-            // Архивируем старые файлы, если они есть
-            if (logFiles != null) {
-                for (File logFile : logFiles) {
-                    // Архивируем файл в .gz
-                    // logFile.renameTo(logFile+".gz");
-                    String gzFileName = logFile.getAbsolutePath() + ".gz";
-                    try (FileInputStream fis = new FileInputStream(logFile);
-                         GZIPOutputStream gzos = new GZIPOutputStream(new FileOutputStream(gzFileName))) {
+        for (File logFile : logFiles) {
+            File gzFile = new File(logFile.getAbsolutePath() + ".gz");
 
-                        byte[] buffer = new byte[1024];
-                        int length;
-                        while ((length = fis.read(buffer)) > 0) {
-                            gzos.write(buffer, 0, length);
-                        }
-                    } catch (IOException e) {
-                        plugin.getLogger().severe("Ошибка при архивировании лога: " + e.getMessage());
-                    }
-                    // try {
-                    //     // Удаляем оригинальный лог-файл после архивирования
-                    //     Files.delete(Paths.get(logFile.getAbsolutePath()));
-                    //     getLogger().info("Лог файл архивирован: " + gzFileName);
-                    //
-                    // } catch (IOException e) {
-                    //     getLogger().severe("Ошибка при удалении старого лога");
-                    // }
-                }
+            try (
+                FileInputStream fis = new FileInputStream(logFile);
+                GZIPOutputStream gzos = new GZIPOutputStream(new FileOutputStream(gzFile))
+            ) {
+                fis.transferTo(gzos);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Ошибка при архивировании " + logFile.getName() + ": " + e.getMessage());
+                continue;
             }
 
-        } catch (Exception e) {
-            plugin.getLogger().severe("Не удалось архивировать старые логи: " + e.getMessage());
+            try {
+                Files.delete(logFile.toPath());
+                plugin.getLogger().info("Архивирован лог: " + gzFile.getName());
+            } catch (IOException e) {
+                plugin.getLogger().warning("Не удалось удалить старый лог " + logFile.getName());
+            }
         }
     }
 
     public void log(String playerName, String operationDetails) {
-        PluginLogger.logger.info("["+playerName+"]" + ": " + operationDetails);
+        PluginLogger.logger.info(String.format("[%s]: %s", playerName, operationDetails));
     }
 }
