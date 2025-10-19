@@ -1,7 +1,11 @@
 package egorkhabarov.commands;
 
 import egorkhabarov.Gems;
+import egorkhabarov.config.ConfigManager;
+import egorkhabarov.logger.PluginLogger;
+import egorkhabarov.utils.ChatUtils;
 import egorkhabarov.utils.Utils;
+import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -10,15 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import java.util.Locale;
-import java.util.Map;
+
 
 public class GemsCommand implements CommandExecutor {
-    private final Gems plugin;
-
-    public GemsCommand(Gems gems) {
-        this.plugin = gems;
-    }
-
     @Override
     public boolean onCommand(
         @NotNull CommandSender sender,
@@ -26,17 +24,22 @@ public class GemsCommand implements CommandExecutor {
         @NotNull String label,
         @NotNull String[] args
     ) {
+        Gems plugin = Gems.getInstance();
+        ConfigManager config = plugin.getConfigManager();
+        PluginLogger logger = plugin.getPluginLogger();
+        Economy economy = plugin.getEconomy();
+
         if (
             (sender.isOp() || sender.hasPermission("gems.*") || sender.hasPermission("gems.reload"))
             && args.length == 1
             && args[0].equals("reload")) {
-            this.plugin.getConfigManager().reload();
+            config.reload();
             sender.sendMessage("§aPlugin config successfully reloaded");
             return true;
         }
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cТолько игроки могут использовать эту команду!");
+            sender.sendMessage("§cOnly players can use this command!");
             return true;
         }
 
@@ -62,7 +65,7 @@ public class GemsCommand implements CommandExecutor {
                 }
             }
             if (receiver == null) {
-                player.sendMessage("§cЭтот игрок не в сети");
+                player.sendMessage("§cThis player is offline");
                 return true;
             }
 
@@ -70,16 +73,16 @@ public class GemsCommand implements CommandExecutor {
             try {
                 value = Integer.parseInt(args[2]);
                 if (value < 1) {
-                    player.sendMessage("§cЧисло слишком маленькое. Минимум §a§l1 Gems");
+                    player.sendMessage("§cThe number is too small. Minimum §a§l1 Gems");
                     return true;
                 }
-                int max_value = this.plugin.getConfigManager().getMaxValue();
+                int max_value = config.getMaxValue();
                 if (value > max_value) {
-                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", max_value) + " Gems");
+                    player.sendMessage("§cThe number is too large. Maximum §a§l"+ String.format(Locale.US, "%,d", max_value) + " Gems");
                     return true;
                 }
             } catch (NumberFormatException e) {
-                player.sendMessage("§cНеверное значение. Введите целое число.");
+                player.sendMessage("§cInvalid value. Please enter an integer.");
                 return true;
             }
 
@@ -94,7 +97,7 @@ public class GemsCommand implements CommandExecutor {
                         throw new NumberFormatException();
                     }
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§cНеверное значение. Введите целое число не больше 64.");
+                    player.sendMessage("§cInvalid value. Please enter an integer no greater than 64.");
                     return true;
                 }
             }
@@ -102,13 +105,13 @@ public class GemsCommand implements CommandExecutor {
             String creator = player.getUniqueId().toString();
             String creatorName = player.getName();
             ItemStack gemItem = Utils.createGemsItem(value, amount, creator, creatorName);
-            this.plugin.getPluginLogger().log(creator+":"+creatorName, "give [" + Utils.formatPlayer(receiver)+ "] " + value * gemItem.getAmount() + " (" + value + "*" + gemItem.getAmount() + ") Gems");
-            this.giveItems(receiver, gemItem);
+            logger.log(creator+":"+creatorName, "give [" + Utils.formatPlayer(receiver)+ "] " + value * gemItem.getAmount() + " (" + value + "*" + gemItem.getAmount() + ") Gems");
+            Utils.giveItems(receiver, gemItem);
             player.sendMessage("§aYou give "+ receiverName + " §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
             receiver.sendMessage("§aAdministrator give you §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
             return true;
         } else if (args[0].equals("give")) {
-            sender.sendMessage("§cИспользование команды: /gems give <player> <value> <count>");
+            sender.sendMessage("§cUsing the command: /gems give <player> <value> <count>");
             return true;
         }
 
@@ -122,19 +125,19 @@ public class GemsCommand implements CommandExecutor {
                 if (!args[1].equals("all")) {
                     value = Integer.parseInt(args[1]);
                 } else {
-                    value = (int) this.plugin.getEconomy().getBalance(player);
+                    value = (int) economy.getBalance(player);
                 }
                 if (value < 1) {
-                    player.sendMessage("§cЧисло слишком маленькое. Минимум §a§l1 Gems");
+                    player.sendMessage("§cThe number is too small. Minimum §a§l1 Gems");
                     return true;
                 }
-                int max_value = this.plugin.getConfigManager().getMaxValue();
+                int max_value = config.getMaxValue();
                 if (value > max_value) {
-                    player.sendMessage("§cЧисло слишком большое. Максимум §a§l"+ String.format(Locale.US, "%,d", max_value) + " Gems");
+                    player.sendMessage("§cThe number is too large. Maximum §a§l"+ String.format(Locale.US, "%,d", max_value) + " Gems");
                     return true;
                 }
             } catch (NumberFormatException e) {
-                player.sendMessage("§cНеверное значение. Введите целое число.");
+                player.sendMessage("§cInvalid value. Please enter an integer.");
                 return true;
             }
             int amount = 1;
@@ -148,43 +151,30 @@ public class GemsCommand implements CommandExecutor {
                         throw new NumberFormatException();
                     }
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§cНеверное значение. Введите целое число не больше 64.");
+                    player.sendMessage("§cInvalid value. Please enter an integer no greater than 64.");
                     return true;
                 }
             }
 
-            int balance = (int) this.plugin.getEconomy().getBalance(player);
+            int balance = (int) economy.getBalance(player);
             if (balance < value * amount) {
                 player.sendMessage("§cYou don't have enough §a§lGems.");
                 return true;
             }
-            EconomyResponse economyResponse = this.plugin.getEconomy().withdrawPlayer(player, value * amount);
+            EconomyResponse economyResponse = economy.withdrawPlayer(player, value * amount);
             if (economyResponse.type == EconomyResponse.ResponseType.FAILURE) {
                 player.sendMessage("§cFailed to withdraw §a§lGems.");
                 return true;
             }
 
             ItemStack gemItem = Utils.createGemsItem(value, amount, player.getUniqueId().toString(), player.getName());
-            this.plugin.getPluginLogger().log(Utils.formatPlayer(player), "withdrawal "+Utils.formatGems(gemItem));
-            this.giveItems(player, gemItem);
-            player.sendMessage("§aYou withdrew §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
+            logger.log(Utils.formatPlayer(player), "withdrawal "+Utils.formatGems(gemItem));
+            Utils.giveItems(player, gemItem);
+            ChatUtils.sendWithdrawGemsMessage(player, value * amount);
             return true;
         } else {
-            sender.sendMessage("§cИспользование команды: /gems withdrawal <value>");
+            sender.sendMessage("§cUsing the command: /gems withdrawal <value>");
             return true;
-        }
-    }
-
-    public void giveItems(Player player, ItemStack item) {
-        Map<Integer, ItemStack> leftoverItems = player.getInventory().addItem(item);
-
-        // Проверяем, были ли предметы, которые не поместились в инвентарь
-        if (!leftoverItems.isEmpty()) {
-            // Мы можем вернуть оставшиеся предметы в виде обычных ItemStack
-            for (ItemStack leftoverItem : leftoverItems.values()) {
-                // Если предметы не помещаются, можно вернуть их игроку
-                player.getWorld().dropItem(player.getLocation(), leftoverItem);
-            }
         }
     }
 }
