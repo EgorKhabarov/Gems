@@ -33,7 +33,7 @@ public final class Gems extends JavaPlugin implements Listener {
         Gems.instance = this;
         if (!this.setupEconomy()) {
             this.getLogger().severe("Plugin §6Vault §сnot found on server!");
-            this.getServer().getPluginManager().disablePlugin(this); // TODO ? disablePlugin
+            this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
