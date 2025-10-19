@@ -18,9 +18,11 @@ import java.util.Map;
 
 public class Utils {
     public static @Nullable Integer checkEmerald(@Nullable ItemStack item) {
+        ConfigManager config = Gems.getInstance().getConfigManager();
+        Material material = Utils.getMaterialSafe(config.getItemMaterial(), Material.EMERALD);
         if (
             item == null
-            || item.getType() != Material.EMERALD
+            || item.getType() != material
             || !item.hasItemMeta()
         ) {
             return null;
