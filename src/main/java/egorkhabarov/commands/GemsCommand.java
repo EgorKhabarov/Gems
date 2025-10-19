@@ -102,7 +102,7 @@ public class GemsCommand implements CommandExecutor {
             String creator = player.getUniqueId().toString();
             String creatorName = player.getName();
             ItemStack gemItem = Utils.createGemsItem(value, amount, creator, creatorName);
-            this.plugin.log(creator+":"+creatorName, "give [" + Utils.formatPlayer(receiver)+ "] " + value * gemItem.getAmount() + " (" + value + "*" + gemItem.getAmount() + ") Gems");
+            this.plugin.getPluginLogger().log(creator+":"+creatorName, "give [" + Utils.formatPlayer(receiver)+ "] " + value * gemItem.getAmount() + " (" + value + "*" + gemItem.getAmount() + ") Gems");
             this.giveItems(receiver, gemItem);
             player.sendMessage("§aYou give "+ receiverName + " §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
             receiver.sendMessage("§aAdministrator give you §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
@@ -164,9 +164,8 @@ public class GemsCommand implements CommandExecutor {
                 return true;
             }
 
-            Gems.logger.info(value +" "+ amount +" "+ player.getUniqueId().toString() +" "+ player.getName());
             ItemStack gemItem = Utils.createGemsItem(value, amount, player.getUniqueId().toString(), player.getName());
-            this.plugin.log(Utils.formatPlayer(player), "withdrawal "+Utils.formatGems(gemItem));
+            this.plugin.getPluginLogger().log(Utils.formatPlayer(player), "withdrawal "+Utils.formatGems(gemItem));
             this.giveItems(player, gemItem);
             player.sendMessage("§aYou withdrew §l" + String.format(Locale.US, "%,d", value * amount) + " Gems");
             return true;
