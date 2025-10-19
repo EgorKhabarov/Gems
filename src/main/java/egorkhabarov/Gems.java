@@ -39,8 +39,6 @@ public final class Gems extends JavaPlugin implements Listener {
 
         this.configManager = new ConfigManager(this);
         this.pluginLogger = new PluginLogger(this);
-        this.pluginLogger.setupLogger();
-
         this.getServer().getPluginManager().registerEvents(this, this);
 
         PluginCommand gems = this.getCommand("gems");

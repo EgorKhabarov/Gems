@@ -7,4 +7,3 @@ death_drop:
   enabled: false
   percent: 5
   max: 1000  # null
-

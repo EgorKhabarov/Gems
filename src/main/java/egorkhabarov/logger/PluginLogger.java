@@ -24,16 +24,15 @@ public class PluginLogger {
 
     public PluginLogger(Gems plugin) {
         this.plugin = plugin;
+        this.setupLogger();
     }
 
     public void setupLogger() {
         try {
-            // Получаем текущую дату
             LocalDate currentDate = LocalDate.now();
             FileHandler fileHandler = this.getFileHandler(currentDate);
             PluginLogger.logger.addHandler(fileHandler);
             PluginLogger.logger.setUseParentHandlers(false);
-            // Архивируем старые логи, если они есть
             this.archiveOldLogs();
         } catch (IOException e) {
             plugin.getLogger().severe("Не удалось настроить логирование: " + e.getMessage());
@@ -47,11 +46,10 @@ public class PluginLogger {
             logDir.mkdirs();
         }
 
-        String logFileName = logDir + File.separator + currentDate + ".log"; // Путь к текущему лог-файлу
+        String logFileName = logDir + File.separator + currentDate + ".log";
         File logFile = new File(logFileName);
 
-        // Настройка логгера
-        FileHandler fileHandler = new FileHandler(logFile.getAbsolutePath(), true); // Дневной файл логов
+        FileHandler fileHandler = new FileHandler(logFile.getAbsolutePath(), true);
         fileHandler.setFormatter(new SimpleFormatter() {
             @Override
             public String format(LogRecord record) {
