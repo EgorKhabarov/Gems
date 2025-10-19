@@ -1,7 +1,14 @@
 item:
+  material: "minecraft:emerald"
   name: "§a§l%,d Gems"
   lore: "§fValuable Resource, used for trading"
   max_value: 1_000_000
+
+messages:
+  withdraw: "§aYou withdrew §l%,d Gems"
+  received: "§aYou received §l%,d Gems"
+  withdraw_failed: ""
+  received_failed: ""
 
 death_drop:
   enabled: false
