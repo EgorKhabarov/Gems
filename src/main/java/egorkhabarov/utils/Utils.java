@@ -14,6 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class Utils {
     public static @Nullable Integer checkEmerald(@Nullable ItemStack item) {
@@ -54,7 +55,8 @@ public class Utils {
 
     public static ItemStack createGemsItem(int value, int amount, String creator, String creatorName) {
         ConfigManager config = Gems.getInstance().getConfigManager();
-        ItemStack item = new ItemStack(Material.EMERALD, amount);
+        Material material = Utils.getMaterialSafe(config.getItemMaterial(), Material.EMERALD);
+        ItemStack item = new ItemStack(material, amount);
         ItemMeta meta = item.getItemMeta();
 
         meta.itemName(Component.text(String.format(Locale.US, config.getItemName(), value)));
@@ -82,6 +84,20 @@ public class Utils {
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    public static Material getMaterialSafe(String name, Material fallback) {
+        if (name == null || name.isEmpty()) {
+            return fallback;
+        }
+
+        Material material = Material.matchMaterial(name);  // "minecraft:<...>"
+        if (material != null) {
+            return material;
+        }
+
+        material = Material.matchMaterial(name.replace("minecraft:", ""));
+        return material != null ? material : fallback;
     }
 
     public static String formatPlayer(Player player) {
@@ -129,5 +145,15 @@ public class Utils {
         );
 
         return value * item.getAmount() + " (" + value + "*" + item.getAmount() + ") Gems from [" + creator + ":" + creatorName + "]";
+    }
+
+    public static void giveItems(Player player, ItemStack item) {
+        Map<Integer, ItemStack> leftoverItems = player.getInventory().addItem(item);
+
+        if (!leftoverItems.isEmpty()) {
+            for (ItemStack leftoverItem : leftoverItems.values()) {
+                player.getWorld().dropItem(player.getLocation(), leftoverItem);
+            }
+        }
     }
 }
